@@ -10,7 +10,7 @@ setuptools.setup(
     url='http://github.com/dolph/launchpad2trello',
     packages=['launchpad2trello'],
     entry_points={
-        'console_scripts': ['launchpad2trello = launchpad2trello:cli']},
+        'console_scripts': ['launchpad2trello = launchpad2trello.cli:main']},
     install_requires=[
         'argparse',
         'requests',
