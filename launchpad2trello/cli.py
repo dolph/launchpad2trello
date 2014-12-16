@@ -62,34 +62,64 @@ def main():
         card_name = 'Bug %s: %s' % (task_id, task['title'])
         card_description = 'Bug #%s' % task['id']
 
-        if task_id in cards_by_task_id.keys():
-            LOG.info('Card already exists for Bug %s' % task['id'])
-            card = cards_by_task_id[unicode(task['id'])]
-
-            if card_name != card['name']:
-                LOG.info('Updating card name...')
-                trello.update_card_name(
-                    args.trello_key,
-                    args.trello_token,
-                    card['id'],
-                    card_name)
-
-            if list_id != card['idList']:
-                LOG.info('Updating card list...')
-                trello.update_card_list(
-                    args.trello_key,
-                    args.trello_token,
-                    card['id'],
-                    list_id)
-        else:
+        if task_id not in cards_by_task_id.keys():
             LOG.info('Creating card for Bug %s' % task['id'])
-            trello.create_card(
+            card = trello.create_card(
                 args.trello_key,
                 args.trello_token,
                 list_id=list_id,
                 name=card_name,
                 description=card_description,
                 url=task['url'])
+            cards_by_task_id[unicode(task['id'])] = card
+
+        card = cards_by_task_id[unicode(task['id'])]
+
+        if card_name != card['name']:
+            LOG.info('Updating card name...')
+            trello.update_card_name(
+                args.trello_key,
+                args.trello_token,
+                card['id'],
+                card_name)
+
+        if list_id != card['idList']:
+            LOG.info('Updating card list...')
+            trello.update_card_list(
+                args.trello_key,
+                args.trello_token,
+                card['id'],
+                list_id)
+
+        def ensure_label(card, color):
+            labels = [x['color'] for x in card['labels']]
+
+            if color not in labels:
+                LOG.info('Adding %s label to card...' % color)
+
+                # sorting returns them to a list
+                new_colors = sorted(set(labels + [color]))
+
+                trello.update_card_label(
+                    args.trello_key,
+                    args.trello_token,
+                    card['id'],
+                    new_colors)
+
+        if task['importance'] == 'Critical':
+            ensure_label(card, 'red')
+
+        if task['importance'] == 'High':
+            ensure_label(card, 'orange')
+
+        if task['importance'] == 'Medium':
+            ensure_label(card, 'yellow')
+
+        if task['importance'] in ('Low',):
+            ensure_label(card, 'green')
+
+        if task['importance'] in ('Wishlist',):
+            ensure_label(card, 'blue')
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-import json
+import logging
 import re
 import webbrowser
 
@@ -6,6 +6,8 @@ import requests
 from requests import auth
 from requests_oauthlib import OAuth1
 
+
+LOG = logging.getLogger(__name__)
 
 CLIENT_NAME = 'launchpad2trello'
 ENDPOINT = 'https://api.trello.com'
@@ -81,6 +83,7 @@ def create_card(key, token, list_id, name, description, url):
         'https://api.trello.com/1/cards',
         params={'key': key, 'token': token},
         data=payload)
+    return r.json()
 
 
 def update_card_name(key, token, card_id, name):
@@ -106,6 +109,20 @@ def update_card_list(key, token, card_id, list_id):
     }
     r = requests.put(
         'https://api.trello.com/1/cards/%s/idList' % card_id,
+        params={'key': key, 'token': token},
+        data=payload)
+
+    return r.json()
+
+
+def update_card_label(key, token, card_id, label_color):
+    assert card_id
+
+    payload = {
+        'value': label_color,
+    }
+    r = requests.put(
+        'https://api.trello.com/1/cards/%s/labels' % card_id,
         params={'key': key, 'token': token},
         data=payload)
 
