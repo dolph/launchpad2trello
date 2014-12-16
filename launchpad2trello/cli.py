@@ -47,12 +47,12 @@ def main():
         token=args.trello_token)
 
     for task in lp.list_tasks(args.launchpad_project):
-        if task['status'] in ('Triaged', 'Confirmed'):
-            list_id = lists_by_name['Approved']['id']
-        elif task['status'] in ('In Progress',):
+        if task['status'] in ('In Progress',):
             list_id = lists_by_name['Doing']['id']
         elif task['status'] in ('Fix Committed',):
             list_id = lists_by_name['Done']['id']
+        elif task['milestone'] is not None and task['milestone'] != 'next':
+            list_id = lists_by_name['Approved']['id']
         else:
             # by default, we put everything else in the backlog
             list_id = lists_by_name['Backlog']['id']
