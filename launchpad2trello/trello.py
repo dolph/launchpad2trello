@@ -1,3 +1,5 @@
+import json
+import re
 import webbrowser
 
 import requests
@@ -8,6 +10,9 @@ from requests_oauthlib import OAuth1
 CLIENT_NAME = 'launchpad2trello'
 ENDPOINT = 'https://api.trello.com'
 API_VERSION = '1'
+
+# regular expression used for identifying tasks
+TASK_RE = re.compile('^Bug ([0-9]+): ', re.MULTILINE)
 
 
 class TrelloAuth(auth.AuthBase):
@@ -57,9 +62,6 @@ def create_list(key, token, board_id, name, position=None):
         'https://api.trello.com/1/lists',
         params={'key': key, 'token': token},
         data=payload)
-    print('%s %s' % (r.request.method, r.request.url))
-    print(r.request.body)
-    print('%s: %s' % (r.status_code, r.text))
     return r.body()['id']
 
 
@@ -79,9 +81,35 @@ def create_card(key, token, list_id, name, description, url):
         'https://api.trello.com/1/cards',
         params={'key': key, 'token': token},
         data=payload)
-    print('%s %s' % (r.request.method, r.request.url))
-    print(r.request.body)
-    print('%s: %s' % (r.status_code, r.text))
+
+
+def update_card_name(key, token, card_id, name):
+    assert 1 <= len(name) <= 16384
+
+    payload = {
+        'value': name,
+    }
+    r = requests.put(
+        'https://api.trello.com/1/cards/%s/name' % card_id,
+        params={'key': key, 'token': token},
+        data=payload)
+
+    return r.json()
+
+
+def update_card_list(key, token, card_id, list_id):
+    assert card_id
+    assert list_id
+
+    payload = {
+        'value': list_id,
+    }
+    r = requests.put(
+        'https://api.trello.com/1/cards/%s/idList' % card_id,
+        params={'key': key, 'token': token},
+        data=payload)
+
+    return r.json()
 
 
 def create_lists_as_necessary(key, secret, board_id, token=None):
@@ -113,3 +141,29 @@ def create_lists_as_necessary(key, secret, board_id, token=None):
     create_list('Done')
 
     return lists_by_name
+
+
+def index_cards(key, secret, board_id, token=None):
+    if token is None:
+        token = authorize(key, secret)
+
+    # for some reason, the board ID from the website doesn't work consistently
+    # as an API reference, so we need to retrieve the board ID from the API
+    r = requests.get(
+        'https://api.trello.com/1/boards/%s' % board_id,
+        params={'key': key, 'token': token})
+    board_id = r.json()['id']
+
+    r = requests.get(
+        'https://api.trello.com/1/boards/%s/cards' % board_id,
+        params={'key': key, 'token': token})
+    cards = r.json()
+
+    cards_by_task_id = dict()
+    for card in cards:
+        re_match = re.search(TASK_RE, card['name'])
+        if re_match:
+            task_id = re_match.group(1)
+            cards_by_task_id[task_id] = card
+
+    return cards_by_task_id
