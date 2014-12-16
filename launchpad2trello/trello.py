@@ -3,7 +3,6 @@ import re
 import webbrowser
 
 import requests
-from requests import auth
 from requests_oauthlib import OAuth1
 
 
@@ -15,24 +14,6 @@ API_VERSION = '1'
 
 # regular expression used for identifying tasks
 TASK_RE = re.compile('^Bug ([0-9]+): ', re.MULTILINE)
-
-
-class TrelloAuth(auth.AuthBase):
-    """Attach Trello API authentication to each request."""
-    def __init__(self, key, secret):
-        self.key = key
-        self.secret = secret
-
-    def __call__(self, r):
-        params = {'key': self.key}
-        r.prepare_url(r.url, params)
-        return r
-
-
-def get_client(key, secret):
-    session = requests.Session()
-    session.auth = TrelloAuth(key, secret)
-    return session
 
 
 def authorize(key, secret):
@@ -47,6 +28,11 @@ def authorize(key, secret):
             'response_type': 'token'})
     prepared = r.prepare()
     webbrowser.open(prepared.url)
+    print('Your web browser should be opening to authorize launchpad2trello '
+          'to access Trello on your behalf. If not, follow the steps on:')
+    print('')
+    print('  %s' % prepared.url)
+    print('')
     return raw_input('Enter your token: ')
 
 
@@ -129,10 +115,7 @@ def update_card_label(key, token, card_id, label_color):
     return r.json()
 
 
-def create_lists_as_necessary(key, secret, board_id, token=None):
-    if token is None:
-        token = authorize(key, secret)
-
+def create_lists_as_necessary(key, token, board_id):
     # for some reason, the board ID from the website doesn't work consistently
     # as an API reference, so we need to retrieve the board ID from the API
     r = requests.get(
@@ -160,10 +143,7 @@ def create_lists_as_necessary(key, secret, board_id, token=None):
     return lists_by_name
 
 
-def index_cards(key, secret, board_id, token=None):
-    if token is None:
-        token = authorize(key, secret)
-
+def index_cards(key, token, board_id):
     # for some reason, the board ID from the website doesn't work consistently
     # as an API reference, so we need to retrieve the board ID from the API
     r = requests.get(

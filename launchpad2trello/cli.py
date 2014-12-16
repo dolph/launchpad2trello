@@ -34,17 +34,18 @@ def main():
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(level=log_level)
 
+    trello_token = args.trello_token or trello.authorize(
+        args.trello_key, args.trello_secret)
+
     lists_by_name = trello.create_lists_as_necessary(
         args.trello_key,
-        args.trello_secret,
-        args.trello_board_id,
-        token=args.trello_token)
+        trello_token,
+        args.trello_board_id)
 
     cards_by_task_id = trello.index_cards(
         args.trello_key,
-        args.trello_secret,
-        args.trello_board_id,
-        token=args.trello_token)
+        trello_token,
+        args.trello_board_id)
 
     for task in lp.list_tasks(args.launchpad_project):
         if task['status'] in ('In Progress',):
@@ -66,7 +67,7 @@ def main():
             LOG.info('Creating card for Bug %s' % task['id'])
             card = trello.create_card(
                 args.trello_key,
-                args.trello_token,
+                trello_token,
                 list_id=list_id,
                 name=card_name,
                 description=card_description,
@@ -79,7 +80,7 @@ def main():
             LOG.info('Updating card name...')
             trello.update_card_name(
                 args.trello_key,
-                args.trello_token,
+                trello_token,
                 card['id'],
                 card_name)
 
@@ -87,7 +88,7 @@ def main():
             LOG.info('Updating card list...')
             trello.update_card_list(
                 args.trello_key,
-                args.trello_token,
+                trello_token,
                 card['id'],
                 list_id)
 
@@ -102,7 +103,7 @@ def main():
 
                 trello.update_card_label(
                     args.trello_key,
-                    args.trello_token,
+                    trello_token,
                     card['id'],
                     new_colors)
 
