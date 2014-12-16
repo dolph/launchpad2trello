@@ -42,7 +42,7 @@ def authorize(key, secret):
         'GET', url, auth=auth, params={
             'key': key,
             'name': CLIENT_NAME,
-            'expiration': '1hour',  # change to 'never'
+            'expiration': 'never',
             'scope': 'read,write',
             'response_type': 'token'})
     prepared = r.prepare()
