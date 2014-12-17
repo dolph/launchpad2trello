@@ -50,7 +50,7 @@ def create_list(key, token, board_id, name, position=None):
         'https://api.trello.com/1/lists',
         params={'key': key, 'token': token},
         data=payload)
-    return r.body()['id']
+    return r.json()['id']
 
 
 def create_card(key, token, list_id, name, description, url):
