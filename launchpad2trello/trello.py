@@ -130,16 +130,16 @@ def create_lists_as_necessary(key, token, board_id):
 
     lists_by_name = dict([(x['name'], x) for x in lists])
 
-    def create_list(list_name):
+    def create_list_if_necessary(list_name):
         if list_name not in lists_by_name.keys():
             list_id = create_list(key, token, board_id, name=list_name)
             lists_by_name[list_name] = list_id
 
-    create_list('Backlog')
-    create_list('Approved')
-    create_list('Doing')
-    create_list('Dev Done')
-    create_list('Released')
+    create_list_if_necessary('Backlog')
+    create_list_if_necessary('Approved')
+    create_list_if_necessary('Doing')
+    create_list_if_necessary('Dev Done')
+    create_list_if_necessary('Released')
 
     return lists_by_name
 
