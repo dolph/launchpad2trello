@@ -138,7 +138,8 @@ def create_lists_as_necessary(key, token, board_id):
     create_list('Backlog')
     create_list('Approved')
     create_list('Doing')
-    create_list('Done')
+    create_list('Dev Done')
+    create_list('Released')
 
     return lists_by_name
 

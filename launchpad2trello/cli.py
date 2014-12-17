@@ -48,14 +48,19 @@ def main():
         args.trello_board_id)
 
     for task in lp.list_tasks(args.launchpad_project):
-        if task['status'] in ('In Progress',):
+        if task['status'] in ('Triaged',):
+            list_id = lists_by_name['Approved']['id']
+        elif task['status'] in ('In Progress',):
             list_id = lists_by_name['Doing']['id']
         elif task['status'] in ('Fix Committed',):
-            list_id = lists_by_name['Done']['id']
+            list_id = lists_by_name['Dev Done']['id']
+        elif task['status'] in ('Fix Released',):
+            list_id = lists_by_name['Released']['id']
         elif task['milestone'] is not None and task['milestone'] != 'next':
             list_id = lists_by_name['Approved']['id']
         else:
-            # by default, we put everything else in the backlog
+            # by default, we put everything else in the backlog:
+            # New, Incomplete, Opinion, Invalid, Won't Fix, Confirmed
             list_id = lists_by_name['Backlog']['id']
 
         # task IDs are integers, but they're unicode as dict keys
