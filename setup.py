@@ -14,7 +14,8 @@ setuptools.setup(
     install_requires=[
         'argparse',
         'requests',
-        'requests_oauthlib'],
+        'requests_oauthlib',
+        'dogpile.cache'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

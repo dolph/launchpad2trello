@@ -1,15 +1,20 @@
-import os
-
 import requests
 
+from launchpad2trello import cache
 
-CACHE_DIR = os.path.expanduser('~/.launchpadlib/cache/')
 
 ALL_STATUSES = (
     'New', 'Incomplete', 'Opinion', 'Invalid', 'Won\'t Fix', 'Confirmed',
     'Triaged', 'In Progress', 'Fix Committed', 'Fix Released')
 
 
+@cache.cache_on_arguments(expiration_time=60 * 60)
+def get_bug(bug_link):
+    """Inflate a task object."""
+    return requests.get(bug_link).json()
+
+
+@cache.cache_on_arguments(expiration_time=60 * 60 * 24 * 7)
 def get_project(project_name):
     r = requests.get(
         'https://api.launchpad.net/devel/%(project_name)s' % {
@@ -52,31 +57,33 @@ def list_bugs(project):
             'status': ALL_STATUSES})
     url = request.prepare().url
 
-    for bug in _yield_collection(url):
+    for task in _yield_collection(url):
         # backwards compat
-        bug['url'] = bug['web_link']
+        task['url'] = task['web_link']
 
         # we don't need anything but the name, so just parse and pray
-        bug['owner'] = {
-            'name': bug['owner_link'].rsplit('/')[-1].replace('~', '', 1)}
+        task['owner'] = {
+            'name': task['owner_link'].rsplit('/')[-1].replace('~', '', 1)}
 
-        if bug.get('assignee_link'):
+        if task.get('assignee_link'):
             # we don't need anything but the name, so just parse and pray
-            assignee = bug['assignee_link'].rsplit('/')[-1].replace('~', '', 1)
-            bug['assignee'] = {
+            assignee = task['assignee_link']
+            assignee = assignee.rsplit('/')[-1].replace('~', '', 1)
+            task['assignee'] = {
                 'name': assignee}
 
-        if bug.get('milestone_link'):
+        if task.get('milestone_link'):
             # we don't need anything but the name, so just parse and pray
-            bug['milestone'] = {
-                'name': bug['milestone_link'].rsplit('/')[-1]}
+            task['milestone'] = {
+                'name': task['milestone_link'].rsplit('/')[-1]}
 
-        # smash the overall bug and project-specific task together. we only
+        # smash the project-specific task into the overall bug. we only
         # care about one project, so there's no reason to differentiate between
         # the two.
-        bug.update(requests.get(bug['bug_link']).json())
+        task.update(get_bug(task['bug_link']))
 
-        yield bug
+        # this is really a bug + project-specific task
+        yield task
 
 
 def list_specifications(project):
