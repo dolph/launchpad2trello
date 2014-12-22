@@ -12,8 +12,11 @@ CLIENT_NAME = 'launchpad2trello'
 ENDPOINT = 'https://api.trello.com'
 API_VERSION = '1'
 
-# regular expression used for identifying tasks
-TASK_RE = re.compile('^Bug ([0-9]+): ', re.MULTILINE)
+# regular expression used for identifying bugs
+BUG_RE = re.compile('^Bug ([0-9]+): ', re.MULTILINE)
+
+# regular expression used for identifying blueprints
+BLUEPRINT_RE = re.compile('^BP ([A-Za-z0-9-]+): ', re.MULTILINE)
 
 
 def authorize(key, secret):
@@ -115,7 +118,7 @@ def update_card_label(key, token, card_id, label_color):
     return r.json()
 
 
-def create_lists_as_necessary(key, token, board_id):
+def create_lists_as_necessary(key, token, board_id, list_names):
     # for some reason, the board ID from the website doesn't work consistently
     # as an API reference, so we need to retrieve the board ID from the API
     r = requests.get(
@@ -130,16 +133,11 @@ def create_lists_as_necessary(key, token, board_id):
 
     lists_by_name = dict([(x['name'], x) for x in lists])
 
-    def create_list_if_necessary(list_name):
+    for list_name in list_names:
         if list_name not in lists_by_name.keys():
-            list_id = create_list(key, token, board_id, name=list_name)
+            list_id = create_list(
+                key, token, board_id, name=list_name)
             lists_by_name[list_name] = list_id
-
-    create_list_if_necessary('Backlog')
-    create_list_if_necessary('Approved')
-    create_list_if_necessary('Doing')
-    create_list_if_necessary('Dev Done')
-    create_list_if_necessary('Released')
 
     return lists_by_name
 
@@ -157,11 +155,17 @@ def index_cards(key, token, board_id):
         params={'key': key, 'token': token})
     cards = r.json()
 
-    cards_by_task_id = dict()
+    cards_by_bug_id = dict()
+    cards_by_blueprint_id = dict()
     for card in cards:
-        re_match = re.search(TASK_RE, card['name'])
+        re_match = re.search(BUG_RE, card['name'])
         if re_match:
-            task_id = re_match.group(1)
-            cards_by_task_id[task_id] = card
+            bug_id = re_match.group(1)
+            cards_by_bug_id[bug_id] = card
 
-    return cards_by_task_id
+        re_match = re.search(BLUEPRINT_RE, card['name'])
+        if re_match:
+            blueprint_id = re_match.group(1)
+            cards_by_blueprint_id[blueprint_id] = card
+
+    return cards_by_bug_id, cards_by_blueprint_id

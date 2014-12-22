@@ -14,8 +14,7 @@ setuptools.setup(
     install_requires=[
         'argparse',
         'requests',
-        'requests_oauthlib',
-        'launchpadlib'],
+        'requests_oauthlib'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
