@@ -165,14 +165,14 @@ def main():
         card_description = 'BP %s' % blueprint['name']
 
         if blueprint_id not in cards_by_blueprint_id.keys():
-            LOG.info('Creating card for Bug %s' % bug['id'])
+            LOG.info('Creating card for BP %s' % blueprint_id)
             card = trello.create_card(
                 args.trello_key,
                 trello_token,
                 list_id=list_id,
                 name=card_name,
                 description=card_description,
-                url=bug['url'])
+                url=blueprint['web_link'])
             cards_by_blueprint_id[blueprint_id] = card
 
         card = cards_by_blueprint_id[blueprint_id]
