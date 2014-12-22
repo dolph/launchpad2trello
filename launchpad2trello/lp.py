@@ -1,39 +1,42 @@
+import logging
 import requests
 
 from launchpad2trello import cache
 
+
+LOG = logging.getLogger(__name__)
 
 ALL_STATUSES = (
     'New', 'Incomplete', 'Opinion', 'Invalid', 'Won\'t Fix', 'Confirmed',
     'Triaged', 'In Progress', 'Fix Committed', 'Fix Released')
 
 
+@cache.cache_on_arguments(expiration_time=60)
+def _get_json(url):
+    LOG.info('GET %s' % url)
+    return requests.get(
+        url,
+        headers={
+            'Accept': 'application/json'}).json()
+
+
 @cache.cache_on_arguments(expiration_time=60 * 60)
 def get_bug(bug_link):
     """Inflate a task object."""
-    return requests.get(bug_link).json()
+    return _get_json(bug_link)
 
 
 @cache.cache_on_arguments(expiration_time=60 * 60 * 24 * 7)
 def get_project(project_name):
-    r = requests.get(
-        'https://api.launchpad.net/devel/%(project_name)s' % {
-            'project_name': project_name},
-        headers={
-            'Accept': 'application/json'})
-    project = r.json()
+    project = _get_json('https://api.launchpad.net/devel/%(project_name)s' % {
+        'project_name': project_name})
     return project
 
 
 def _yield_collection(url):
     """Generate a list of entries starting with the provided URL."""
     while True:
-        r = requests.get(
-            url,
-            headers={
-                'Accept': 'application/json'})
-
-        collection = r.json()
+        collection = _get_json(url)
 
         for item in collection['entries']:
             yield item
