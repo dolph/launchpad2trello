@@ -30,8 +30,8 @@ def _yield_collection(url):
 
         collection = r.json()
 
-        for bug in collection['entries']:
-            yield bug
+        for item in collection['entries']:
+            yield item
 
         if 'next_collection_link' not in collection:
             # the collection ends when we don't have another link to follow
