@@ -31,14 +31,7 @@ def main():
 
     args = parser.parse_args()
 
-    log_level = logging.INFO
-    if args.debug:
-        log_level = logging.DEBUG
-
-        import httplib2
-        httplib2.debuglevel = 1
-
-    logging.basicConfig(level=log_level)
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
     lp_project = lp.get_project(args.launchpad_project)
 
