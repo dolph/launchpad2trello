@@ -1,4 +1,5 @@
 import logging
+
 import requests
 
 from launchpad2trello import cache
@@ -93,4 +94,9 @@ def list_specifications(project):
     url = project['valid_specifications_collection_link']
 
     for spec in _yield_collection(url):
+        if spec.get('milestone_link'):
+            # we don't need anything but the name, so just parse and pray
+            spec['milestone'] = {
+                'name': spec['milestone_link'].rsplit('/')[-1]}
+
         yield spec

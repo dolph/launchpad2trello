@@ -127,19 +127,32 @@ def create_label(key, token, board_id, name, color):
     return r.json()
 
 
-def update_card_label(key, token, card_id, label_color):
+def label_card(key, token, card_id, label_id):
     assert card_id
 
     payload = {
-        'value': label_color,
+        'value': label_id,
     }
-    r = requests.put(
-        'https://api.trello.com/1/cards/%s/labels' % card_id,
+    r = requests.post(
+        'https://api.trello.com/1/cards/%s/idLabels' % card_id,
         params={'key': key, 'token': token},
         data=payload)
 
     return r.json()
 
+
+def unlabel_card(key, token, card_id, label_id):
+    assert card_id
+
+    r = requests.post(
+        'https://api.trello.com/1/cards/%(card_id)s/idLabels/%(label_id)s' % {
+            'card_id': card_id,
+            'label_id': label_id,
+        },
+        params={'key': key, 'token': token},
+        data=payload)
+
+    return r.json()
 
 def normalize_board_id(key, token, board_id):
     # for some reason, the board ID from the website doesn't work consistently

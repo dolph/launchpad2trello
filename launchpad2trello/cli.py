@@ -110,30 +110,40 @@ def main():
                 card['id'],
                 list_id)
 
-    def ensure_label(card, color):
-        labels = [x['color'] for x in card['labels']]
+    def ensure_label(card, label_id, condition=True):
+        """Ensures a card is labeled appropriately if the condition is true.
 
-        if color not in labels:
-            LOG.info('Adding %s label to card...' % color)
-
-            # sorting returns them to a list
-            new_colors = sorted(set(labels + [color]))
-
-            trello.update_card_label(
+        If the condition is not true, ensures the card is not
+        labeled as such.
+        """
+        if label_id not in card['idLabels'] and condition:
+            LOG.info('Adding label %s to card...' % label_id)
+            trello.label_card(
                 args.trello_key,
                 trello_token,
                 card['id'],
-                new_colors)
+                label_id)
+
+        if label_id in card['idLabels'] and not condition:
+            LOG.info('Removing label %s from card...' % label_id)
+            trello.unlabel_card(
+                args.trello_key,
+                trello_token,
+                card['id'],
+                label_id)
 
     labels = trello.list_labels(
         args.trello_key, trello_token, trello_board_id)
     labels_by_name = dict((x['name'], x) for x in labels)
-    for label_name, label_color in EXPECTED_LABELS.iteritems():
-        if label_name not in labels_by_name.keys():
+
+    def ensure_label_exists(board_id, name, color):
+        if name not in labels_by_name.keys():
             label = trello.create_label(
-                args.trello_key, trello_token, trello_board_id, label_name,
-                label_color)
-            labels_by_name[label_name] = label
+                args.trello_key, trello_token, trello_board_id, name, color)
+            labels_by_name[name] = label
+
+    for label_name, label_color in EXPECTED_LABELS.iteritems():
+        ensure_label_exists(trello_board_id, label_name, label_color)
 
     for bug in lp.list_bugs(lp_project):
         if bug['status'] in ('Triaged',):
@@ -172,20 +182,25 @@ def main():
         update_card_name(card, card_name)
         update_card_list(card, list_id)
 
-        if bug['importance'] == 'Critical':
-            ensure_label(card, 'red')
+        ensure_label(
+            card, labels_by_name['Critical']['id'],
+            condition=bug['importance'] == 'Critical')
 
-        if bug['importance'] == 'High':
-            ensure_label(card, 'orange')
+        ensure_label(
+            card, labels_by_name['High']['id'],
+            condition=bug['importance'] == 'High')
 
-        if bug['importance'] == 'Medium':
-            ensure_label(card, 'yellow')
+        ensure_label(
+            card, labels_by_name['Medium']['id'],
+            condition=bug['importance'] == 'Medium')
 
-        if bug['importance'] in ('Low',):
-            ensure_label(card, 'green')
+        ensure_label(
+            card, labels_by_name['Low']['id'],
+            condition=bug['importance'] == 'Low')
 
-        if bug['importance'] in ('Wishlist',):
-            ensure_label(card, 'blue')
+        ensure_label(
+            card, labels_by_name['Wishlist']['id'],
+            condition=bug['importance'] == 'Wishlist')
 
     for blueprint in lp.list_specifications(lp_project):
         if blueprint['lifecycle_status'] in ('Unknown',):
@@ -226,9 +241,44 @@ def main():
         update_card_name(card, card_name)
         update_card_list(card, list_id)
 
-        # TODO(dolph): Bernardo has a bunch of trello labels to map to based on
-        # the blueprint['priority']... but for now, they're all just wishlisty.
-        ensure_label(card, 'blue')
+        ensure_label(
+            card, labels_by_name['Not']['id'],
+            condition=blueprint['priority'] == 'Not')
+
+        ensure_label(
+            card, labels_by_name['Undefined']['id'],
+            condition=blueprint['priority'] == 'Undefined')
+
+        ensure_label(
+            card, labels_by_name['Low']['id'],
+            condition=blueprint['priority'] == 'Low')
+
+        ensure_label(
+            card, labels_by_name['Medium']['id'],
+            condition=blueprint['priority'] == 'Medium')
+
+        ensure_label(
+            card, labels_by_name['High']['id'],
+            condition=blueprint['priority'] == 'High')
+
+        ensure_label(
+            card, labels_by_name['Essential']['id'],
+            condition=blueprint['priority'] == 'Essential')
+
+        ensure_label(
+            card, labels_by_name['Blocked']['id'],
+            condition=blueprint['implementation_status'] == 'Blocked')
+
+        if blueprint.get('milestone'):
+            # milestone labels are created on-demand; probably should set them
+            # up first instead.
+            ensure_label_exists(
+                trello_board_id, blueprint['milestone']['name'], color=None)
+            ensure_label(
+                card, labels_by_name[blueprint['milestone']['name']]['id'])
+            # FIXME(dolph): labels for other milestones are not removed, so if
+            # a blueprint is retargeted to another milestone, you'll get two
+            # labels in trello
 
 
 if __name__ == '__main__':
