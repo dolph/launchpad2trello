@@ -104,6 +104,29 @@ def update_card_list(key, token, card_id, list_id):
     return r.json()
 
 
+def list_labels(key, token, board_id):
+    r = requests.get(
+        'https://api.trello.com/1/boards/%s/labels' % board_id,
+        params={'key': key, 'token': token})
+    return r.json()
+
+
+def create_label(key, token, board_id, name, color):
+    assert 1 <= len(name) <= 16384
+    # TODO(dolph): assert valid label color
+
+    payload = {
+        'name': name,
+        'color': color,
+    }
+    r = requests.post(
+        'https://api.trello.com/1/boards/%s/labels' % board_id,
+        params={'key': key, 'token': token},
+        data=payload)
+
+    return r.json()
+
+
 def update_card_label(key, token, card_id, label_color):
     assert card_id
 

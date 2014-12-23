@@ -7,6 +7,46 @@ from launchpad2trello import trello
 
 LOG = logging.getLogger(__name__)
 
+EXPECTED_LABELS = {
+    # bug priorities
+    'Undecided': 'blue',
+    'Critical': 'red',
+    'High': 'green',
+    'Medium': 'green',
+    'Low': 'green',
+    'Wishlist': 'blue',
+
+    # blueprint priorities
+    'Not': 'blue',
+    'Undefined': 'blue',
+    'Low': 'green',
+    'Medium': 'green',
+    'High': 'green',
+    'Essential': 'red',
+
+    # blueprint status
+    'Blocked': 'red',
+
+    # unused?
+    'impacts:doc': 'orange',
+    'impacts:qe': 'orange',
+    'impacts:backport potential': 'orange',
+    'impacts:approved': 'orange',
+    'impacts:pending approval': 'orange',
+    'impacts:review': 'orange',
+    'impacts:drafting': 'orange',
+    'impacts:discussion': 'orange',
+    'impacts:new': 'orange',
+    'impacts:superseded': 'orange',
+    'impacts:obsolete': 'orange',
+    'impacts:approved': 'orange',
+    'impacts:needs approval': 'orange',
+    'type:bug': 'black',
+    'type:blueprint': 'black',
+    'type:task': 'black',
+    'type:spike': 'black',
+}
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -84,6 +124,16 @@ def main():
                 trello_token,
                 card['id'],
                 new_colors)
+
+    labels = trello.list_labels(
+        args.trello_key, trello_token, trello_board_id)
+    labels_by_name = dict((x['name'], x) for x in labels)
+    for label_name, label_color in EXPECTED_LABELS.iteritems():
+        if label_name not in labels_by_name.keys():
+            label = trello.create_label(
+                args.trello_key, trello_token, trello_board_id, label_name,
+                label_color)
+            labels_by_name[label_name] = label
 
     for bug in lp.list_bugs(lp_project):
         if bug['status'] in ('Triaged',):
