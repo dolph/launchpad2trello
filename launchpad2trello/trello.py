@@ -118,14 +118,17 @@ def update_card_label(key, token, card_id, label_color):
     return r.json()
 
 
-def create_lists_as_necessary(key, token, board_id, list_names):
+def normalize_board_id(key, token, board_id):
     # for some reason, the board ID from the website doesn't work consistently
     # as an API reference, so we need to retrieve the board ID from the API
     r = requests.get(
         'https://api.trello.com/1/boards/%s' % board_id,
         params={'key': key, 'token': token})
     board_id = r.json()['id']
+    return board_id
 
+
+def create_lists_as_necessary(key, token, board_id, list_names):
     r = requests.get(
         'https://api.trello.com/1/boards/%s/lists' % board_id,
         params={'key': key, 'token': token})
@@ -143,13 +146,6 @@ def create_lists_as_necessary(key, token, board_id, list_names):
 
 
 def index_cards(key, token, board_id):
-    # for some reason, the board ID from the website doesn't work consistently
-    # as an API reference, so we need to retrieve the board ID from the API
-    r = requests.get(
-        'https://api.trello.com/1/boards/%s' % board_id,
-        params={'key': key, 'token': token})
-    board_id = r.json()['id']
-
     r = requests.get(
         'https://api.trello.com/1/boards/%s/cards' % board_id,
         params={'key': key, 'token': token})

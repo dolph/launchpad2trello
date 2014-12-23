@@ -38,16 +38,19 @@ def main():
     trello_token = args.trello_token or trello.authorize(
         args.trello_key, args.trello_secret)
 
+    trello_board_id = trello.normalize_board_id(
+        args.trello_key, trello_token, args.trello_board_id)
+
     lists_by_name = trello.create_lists_as_necessary(
         args.trello_key,
         trello_token,
-        args.trello_board_id,
+        trello_board_id,
         ['Backlog', 'Approved', 'Doing', 'Dev Done', 'Released'])
 
     cards_by_bug_id, cards_by_blueprint_id = trello.index_cards(
         args.trello_key,
         trello_token,
-        args.trello_board_id)
+        trello_board_id)
 
     def update_card_name(card, name):
         if name != card['name']:
@@ -176,6 +179,7 @@ def main():
         # TODO(dolph): Bernardo has a bunch of trello labels to map to based on
         # the blueprint['priority']... but for now, they're all just wishlisty.
         ensure_label(card, 'blue')
+
 
 if __name__ == '__main__':
     main()
