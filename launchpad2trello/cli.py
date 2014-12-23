@@ -202,6 +202,17 @@ def main():
             card, labels_by_name['Wishlist']['id'],
             condition=bug['importance'] == 'Wishlist')
 
+        if bug.get('milestone'):
+            # milestone labels are created on-demand; probably should set them
+            # up first instead. same goes for blueprints.
+            ensure_label_exists(
+                trello_board_id, bug['milestone']['name'], color=None)
+            ensure_label(
+                card, labels_by_name[bug['milestone']['name']]['id'])
+            # FIXME(dolph): labels for other milestones are not removed, so if
+            # a blueprint is retargeted to another milestone, you'll get two
+            # labels in trello
+
     for blueprint in lp.list_specifications(lp_project):
         if blueprint['lifecycle_status'] in ('Unknown',):
             list_id = lists_by_name['Backlog']['id']
@@ -271,7 +282,7 @@ def main():
 
         if blueprint.get('milestone'):
             # milestone labels are created on-demand; probably should set them
-            # up first instead.
+            # up first instead. same goes for bugs.
             ensure_label_exists(
                 trello_board_id, blueprint['milestone']['name'], color=None)
             ensure_label(
