@@ -144,15 +144,15 @@ def label_card(key, token, card_id, label_id):
 def unlabel_card(key, token, card_id, label_id):
     assert card_id
 
-    r = requests.post(
+    r = requests.delete(
         'https://api.trello.com/1/cards/%(card_id)s/idLabels/%(label_id)s' % {
             'card_id': card_id,
             'label_id': label_id,
         },
-        params={'key': key, 'token': token},
-        data=payload)
+        params={'key': key, 'token': token})
 
     return r.json()
+
 
 def normalize_board_id(key, token, board_id):
     # for some reason, the board ID from the website doesn't work consistently

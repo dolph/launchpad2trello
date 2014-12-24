@@ -34,6 +34,13 @@ def get_project(project_name):
     return project
 
 
+def get_milestones(project):
+    url = project['all_milestones_collection_link']
+
+    for milestone in _yield_collection(url):
+        yield milestone
+
+
 def _yield_collection(url):
     """Generate a list of entries starting with the provided URL."""
     while True:
@@ -91,7 +98,7 @@ def list_bugs(project):
 
 
 def list_specifications(project):
-    url = project['valid_specifications_collection_link']
+    url = project['all_specifications_collection_link']
 
     for spec in _yield_collection(url):
         if spec.get('milestone_link'):

@@ -1,6 +1,7 @@
 import argparse
 import logging
 
+from launchpad2trello import cache
 from launchpad2trello import lp
 from launchpad2trello import trello
 
@@ -68,12 +69,19 @@ def main():
     parser.add_argument(
         '--debug', action='store_true',
         help='Enable debugging output.')
+    parser.add_argument(
+        '--purge-cache', action='store_true',
+        help='Purge the local cache before running.')
 
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
+    if args.purge_cache:
+        cache.purge()
+
     lp_project = lp.get_project(args.launchpad_project)
+    lp_milestones = lp.get_milestones(lp_project)
 
     trello_token = args.trello_token or trello.authorize(
         args.trello_key, args.trello_secret)
@@ -142,8 +150,16 @@ def main():
                 args.trello_key, trello_token, trello_board_id, name, color)
             labels_by_name[name] = label
 
+    # create static labels
     for label_name, label_color in EXPECTED_LABELS.iteritems():
         ensure_label_exists(trello_board_id, label_name, label_color)
+
+    # create labels for each LP milestone
+    milestone_names = []
+    for milestone in lp_milestones:
+        ensure_label_exists(
+            trello_board_id, milestone['name'], color=None)
+        milestone_names.append(milestone['name'])
 
     for bug in lp.list_bugs(lp_project):
         if bug['status'] in ('Triaged',):
@@ -202,16 +218,9 @@ def main():
             card, labels_by_name['Wishlist']['id'],
             condition=bug['importance'] == 'Wishlist')
 
-        if bug.get('milestone'):
-            # milestone labels are created on-demand; probably should set them
-            # up first instead. same goes for blueprints.
-            ensure_label_exists(
-                trello_board_id, bug['milestone']['name'], color=None)
-            ensure_label(
-                card, labels_by_name[bug['milestone']['name']]['id'])
-            # FIXME(dolph): labels for other milestones are not removed, so if
-            # a blueprint is retargeted to another milestone, you'll get two
-            # labels in trello
+        for milestone in milestone_names:
+            condition = bug.get('milestone', {}).get('name') == milestone
+            ensure_label(card, labels_by_name[milestone]['id'], condition)
 
     for blueprint in lp.list_specifications(lp_project):
         if blueprint['lifecycle_status'] in ('Unknown',):
@@ -280,16 +289,9 @@ def main():
             card, labels_by_name['Blocked']['id'],
             condition=blueprint['implementation_status'] == 'Blocked')
 
-        if blueprint.get('milestone'):
-            # milestone labels are created on-demand; probably should set them
-            # up first instead. same goes for bugs.
-            ensure_label_exists(
-                trello_board_id, blueprint['milestone']['name'], color=None)
-            ensure_label(
-                card, labels_by_name[blueprint['milestone']['name']]['id'])
-            # FIXME(dolph): labels for other milestones are not removed, so if
-            # a blueprint is retargeted to another milestone, you'll get two
-            # labels in trello
+        for milestone in milestone_names:
+            condition = blueprint.get('milestone', {}).get('name') == milestone
+            ensure_label(card, labels_by_name[milestone]['id'], condition)
 
 
 if __name__ == '__main__':
